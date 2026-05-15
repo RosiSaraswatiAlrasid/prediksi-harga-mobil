@@ -454,7 +454,7 @@ with col2:
             </div>
         </div>
         <div class="car-list-wrap">
-            <div class="car-list-title">◈ Contoh mobil dalam dataset di segmen ini</div>
+            <div class="car-list-title">◈ Contoh mobil dalam dataset</div>
             <div class="car-list-grid">{pills_html}</div>
         </div>
         """, unsafe_allow_html=True)
