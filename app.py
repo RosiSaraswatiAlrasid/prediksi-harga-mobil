@@ -142,14 +142,14 @@ html, body, [data-testid="stAppViewContainer"] {
 /* CAR IMAGE BANNER */
 .car-banner {
     position: relative; border-radius: 14px; overflow: hidden;
-    margin-bottom: 14px; border: 1px solid var(--border-dim); background: #0d0d14;
+    margin-bottom: 6px; border: 1px solid var(--border-dim); background: #0d0d14;
 }
 .car-banner img {
-    width: 100%; height: 190px; object-fit: cover; display: block; opacity: 0.88;
+    width: 100%; height: 180px; object-fit: cover; display: block; opacity: 0.88;
 }
 .car-banner-overlay {
     position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 14px;
-    background: linear-gradient(0deg, rgba(10,10,15,0.9) 0%, transparent 100%);
+    background: linear-gradient(0deg, rgba(10,10,15,0.92) 0%, transparent 100%);
     display: flex; justify-content: space-between; align-items: flex-end;
 }
 .car-type-badge {
@@ -164,6 +164,33 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 10px; letter-spacing: 2.5px; color: var(--text-muted);
     text-transform: uppercase; margin-bottom: 8px; margin-top: 14px;
 }
+
+/* MOBIL LIST dari dataset */
+.car-list-wrap {
+    background: var(--bg-input);
+    border: 1px solid var(--border-dim);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+.car-list-title {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 10px;
+}
+.car-list-grid {
+    display: flex; flex-wrap: wrap; gap: 6px;
+}
+.car-pill {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 99px;
+    border: 1px solid var(--border-dim);
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.04);
+    white-space: nowrap;
+}
+.car-pill-eco  { border-color: rgba(76,175,130,0.3);  color: #4caf82; background: rgba(76,175,130,0.07); }
+.car-pill-mid  { border-color: rgba(201,168,76,0.3);  color: var(--accent); background: rgba(201,168,76,0.07); }
+.car-pill-pre  { border-color: rgba(229,115,115,0.3); color: #e57373; background: rgba(229,115,115,0.07); }
 
 /* RESULT */
 .result-wrap { text-align: center; padding: 20px 20px 16px; }
@@ -232,6 +259,7 @@ df = pd.read_excel("Car_sales.xlsx")
 # PREPROCESSING
 # =========================
 df.dropna(subset=['Price_in_thousands'], inplace=True)
+df['Car_Name'] = df['Manufacturer'].astype(str) + ' ' + df['Model'].astype(str)
 
 fitur_numerik = ['Engine_size','Horsepower','Wheelbase','Width','Curb_weight','Fuel_capacity','Fuel_efficiency']
 for col in fitur_numerik:
@@ -258,10 +286,25 @@ model = LinearRegression()
 model.fit(X_train, y_train)
 
 # =========================
+# DAFTAR MOBIL PER SEGMEN (dari dataset)
+# =========================
+mobil_ekonomis = df[df['Price_in_thousands'] < 25]['Car_Name'].tolist()
+mobil_menengah = df[(df['Price_in_thousands'] >= 25) & (df['Price_in_thousands'] < 45)]['Car_Name'].tolist()
+mobil_premium  = df[df['Price_in_thousands'] >= 45]['Car_Name'].tolist()
+
+def car_pills_html(car_list, pill_class, max_show=10):
+    """Buat HTML pill untuk daftar mobil"""
+    pills = ""
+    for name in car_list[:max_show]:
+        pills += f'<span class="car-pill {pill_class}">{name}</span>'
+    if len(car_list) > max_show:
+        sisa = len(car_list) - max_show
+        pills += f'<span class="car-pill" style="opacity:0.5;">+{sisa} lainnya</span>'
+    return pills
+
+# =========================
 # GAMBAR MAPPING
 # =========================
-
-# Opsi 1 & 2: Gambar sesuai Vehicle Type yang dipilih
 VEHICLE_IMAGES = {
     "Car": {
         "url": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80",
@@ -275,35 +318,40 @@ VEHICLE_IMAGES = {
     }
 }
 
-# Opsi 3: Gambar sesuai segmen harga hasil prediksi
-def get_price_image(harga):
+def get_price_segment(harga):
     if harga < 25:
         return {
-            "url": "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&q=80",
-            "segment": "EKONOMIS",
+            "url":       "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&q=80",
+            "segment":   "EKONOMIS",
             "css_class": "seg-ekonomis",
-            "range": "< $25K",
-            "desc": "Segmen terjangkau"
+            "pill_class":"car-pill-eco",
+            "range":     "< $25K",
+            "desc":      "Segmen terjangkau",
+            "car_list":  mobil_ekonomis
         }
     elif harga < 45:
         return {
-            "url": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80",
-            "segment": "MENENGAH",
+            "url":       "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80",
+            "segment":   "MENENGAH",
             "css_class": "seg-menengah",
-            "range": "$25K – $45K",
-            "desc": "Segmen menengah"
+            "pill_class":"car-pill-mid",
+            "range":     "$25K – $45K",
+            "desc":      "Segmen menengah",
+            "car_list":  mobil_menengah
         }
     else:
         return {
-            "url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80",
-            "segment": "PREMIUM",
+            "url":       "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80",
+            "segment":   "PREMIUM",
             "css_class": "seg-premium",
-            "range": "> $45K",
-            "desc": "Segmen premium"
+            "pill_class":"car-pill-pre",
+            "range":     "> $45K",
+            "desc":      "Segmen premium",
+            "car_list":  mobil_premium
         }
 
 # =========================
-# HERO TITLE
+# HERO
 # =========================
 st.markdown("""
 <div class="hero">
@@ -339,14 +387,14 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-    engine_size    = st.number_input("Variable 1 — Engine Size (Liter)", min_value=1.0, max_value=8.0, value=3.0, step=0.1)
-    horsepower     = st.number_input("Variable 2 — Horsepower (HP)", min_value=50, max_value=500, value=150)
-    wheelbase      = st.number_input("Variable 3 — Wheelbase (inch)", min_value=80.0, max_value=140.0, value=100.0, step=0.1)
-    width          = st.number_input("Variable 4 — Width (inch)", min_value=60.0, max_value=90.0, value=70.0, step=0.1)
-    curb_weight    = st.number_input("Variable 5 — Curb Weight (ton)", min_value=1.5, max_value=6.0, value=3.0, step=0.1)
-    fuel_capacity  = st.number_input("Variable 6 — Fuel Capacity (gallon)", min_value=5.0, max_value=40.0, value=15.0, step=0.1)
-    fuel_efficiency= st.number_input("Variable 7 — Fuel Efficiency (mpg)", min_value=10.0, max_value=60.0, value=25.0, step=0.1)
-    vehicle_type   = st.selectbox("Variable 8 — Vehicle Type", df['Vehicle_type'].unique())
+    engine_size     = st.number_input("Variable 1 — Engine Size (Liter)",    min_value=1.0,  max_value=8.0,   value=3.0,   step=0.1)
+    horsepower      = st.number_input("Variable 2 — Horsepower (HP)",        min_value=50,   max_value=500,   value=150)
+    wheelbase       = st.number_input("Variable 3 — Wheelbase (inch)",       min_value=80.0, max_value=140.0, value=100.0, step=0.1)
+    width           = st.number_input("Variable 4 — Width (inch)",           min_value=60.0, max_value=90.0,  value=70.0,  step=0.1)
+    curb_weight     = st.number_input("Variable 5 — Curb Weight (ton)",      min_value=1.5,  max_value=6.0,   value=3.0,   step=0.1)
+    fuel_capacity   = st.number_input("Variable 6 — Fuel Capacity (gallon)", min_value=5.0,  max_value=40.0,  value=15.0,  step=0.1)
+    fuel_efficiency = st.number_input("Variable 7 — Fuel Efficiency (mpg)",  min_value=10.0, max_value=60.0,  value=25.0,  step=0.1)
+    vehicle_type    = st.selectbox("Variable 8 — Vehicle Type", df['Vehicle_type'].unique())
 
     tombol = st.button("🚗  HITUNG HARGA MOBIL")
 
@@ -360,12 +408,11 @@ with col2:
         <div class="card-subtitle">HASIL PREDIKSI MODEL</div>
     """, unsafe_allow_html=True)
 
-    # Ambil gambar vehicle type (Opsi 1 — selalu tampil, berubah realtime)
     vtype_key  = vehicle_type if vehicle_type in VEHICLE_IMAGES else "Car"
     vtype_info = VEHICLE_IMAGES[vtype_key]
 
     if tombol:
-        # Prediksi harga
+        # Prediksi
         vehicle_type_enc = le.transform([vehicle_type])[0]
         input_data = pd.DataFrame({
             'Engine_size':      [engine_size],
@@ -380,10 +427,11 @@ with col2:
         hasil = model.predict(input_data)[0]
         if hasil < 0:
             hasil = 0
-        harga_usd  = hasil * 1000
-        price_info = get_price_image(hasil)   # Opsi 3
+        harga_usd   = hasil * 1000
+        price_info  = get_price_segment(hasil)
+        pills_html  = car_pills_html(price_info['car_list'], price_info['pill_class'])
 
-        # Gambar 1: Sesuai vehicle type (Opsi 1 & 2)
+        # Gambar 1: Tipe kendaraan
         st.markdown('<div class="section-label">◈ Tipe Kendaraan</div>', unsafe_allow_html=True)
         st.markdown(f"""
         <div class="car-banner">
@@ -395,7 +443,7 @@ with col2:
         </div>
         """, unsafe_allow_html=True)
 
-        # Gambar 2: Sesuai segmen harga (Opsi 3)
+        # Gambar 2: Segmen harga + daftar mobil dari dataset
         st.markdown('<div class="section-label">◈ Segmen Harga</div>', unsafe_allow_html=True)
         st.markdown(f"""
         <div class="car-banner">
@@ -405,9 +453,13 @@ with col2:
                 <span class="car-segment-text">{price_info['range']} · {price_info['desc']}</span>
             </div>
         </div>
+        <div class="car-list-wrap">
+            <div class="car-list-title">◈ Contoh mobil dalam dataset di segmen ini</div>
+            <div class="car-list-grid">{pills_html}</div>
+        </div>
         """, unsafe_allow_html=True)
 
-        # Harga prediksi
+        # Harga
         st.markdown(f"""
         <div class="result-wrap">
             <div class="result-label">Estimated Price (USD Thousands)</div>
@@ -427,7 +479,7 @@ with col2:
         """, unsafe_allow_html=True)
 
     else:
-        # Sebelum prediksi: tampilkan gambar vehicle type (Opsi 1 — preview realtime)
+        # Preview sebelum prediksi
         st.markdown('<div class="section-label">◈ Tipe Kendaraan</div>', unsafe_allow_html=True)
         st.markdown(f"""
         <div class="car-banner">
